@@ -23,24 +23,36 @@
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         
         .card { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card-title { font-size: 18px; font-weight: bold; color: var(--primaria); margin-bottom: 10px; display: flex; justify-content: space-between;}
+        .card-title { font-size: 18px; font-weight: bold; color: var(--primaria); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
         
-        #assinatura-pad { border: 2px dashed #ccc; border-radius: 8px; background: #fafafa; cursor: crosshair; touch-action: none; width: 100%; height: 200px; margin-bottom: 10px; }
+        #assinatura-pad { border: 2px dashed #ccc; border-radius: 8px; background: #fafafa; cursor: crosshair; touch-action: none; width: 100%; height: 150px; margin-bottom: 10px; }
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.6); align-items: center; justify-content: center; z-index: 1000; }
         .modal { background: #fff; padding: 20px; border-radius: 10px; width: 95%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
         .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: var(--primaria); border-bottom: 2px solid var(--primaria); padding-bottom: 5px; }
         
+        /* Switches Moderinhas do Alô Etiqueta */
+        .switch-container { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: #fff; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primaria); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
         .hidden { display: none !important; }
         .flex-row { display: flex; gap: 10px; }
         .text-center { text-align: center; }
-        .badge { background: var(--secundaria); color: var(--primaria); padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge { background: var(--secundaria); color: var(--primaria); padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
         th { background-color: var(--secundaria); color: var(--primaria); }
         
         #toast { position: fixed; bottom: -60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.85); color: #fff; padding: 12px 24px; border-radius: 25px; font-weight: 700; font-size: 14px; z-index: 999999; transition: bottom 0.3s; pointer-events: none; }
+        
+        .hedonica-radio { display: flex; flex-direction: column; align-items: center; font-size: 12px; text-align: center; width: 60px; }
+        .escala-container { display: flex; justify-content: space-between; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -51,7 +63,6 @@
     <div class="header">
         <div id="header-title">🧪 LAS-UFPB</div>
         <div>
-            <span id="indicador-sync" title="Sincronização">⚪</span>
             <button onclick="abrirConfiguracoes()" style="background:none; font-size: 22px; color: white; padding: 0 5px;">⚙️</button>
         </div>
     </div>
@@ -59,43 +70,67 @@
     <!-- MODO PESQUISADOR -->
     <div id="tela-pesquisador" class="content">
         <h2>Painel do Pesquisador</h2>
-        <button class="btn-acao" onclick="abrirModalNovoTeste()">+ Criar Novo Teste</button>
-        <button class="btn-outline" onclick="alternarModo('julgador')">👁️ Mudar para Modo Julgador</button>
+        <button class="btn-acao" onclick="abrirModalFormTeste()">+ Criar Novo Teste</button>
+        <button class="btn-outline" onclick="alternarModo('julgador')">👁️ Ir para Modo Julgador</button>
         
-        <h3 style="margin-top: 20px;">Testes Ativos</h3>
-        <div id="lista-testes-ativos"></div>
+        <div style="display: flex; gap: 10px; margin-top: 20px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;">
+            <button class="badge" style="border:none; cursor:pointer;" onclick="filtrarTestes('todos')">Todos</button>
+            <button class="badge" style="border:none; cursor:pointer; background:#fff3e0; color:#e65100;" onclick="filtrarTestes('elaboracao')">Em Elaboração</button>
+            <button class="badge" style="border:none; cursor:pointer; background:#e8f5e9; color:#2e7d32;" onclick="filtrarTestes('ativo')">Ativos</button>
+            <button class="badge" style="border:none; cursor:pointer; background:#e3f2fd; color:#1565c0;" onclick="filtrarTestes('concluido')">Concluídos</button>
+        </div>
+
+        <div id="lista-testes-pesquisador"></div>
     </div>
 
     <!-- MODO JULGADOR (Seleção) -->
     <div id="tela-julgador" class="content hidden">
         <h2 class="text-center">Bem-vindo(a)!</h2>
-        <p class="text-center" style="color: #666;">Selecione o teste que você foi convidado a participar:</p>
+        <p class="text-center" style="color: #666;">Selecione o teste ativo que você foi convidado a participar:</p>
         <div id="lista-testes-disponiveis"></div>
-        <button class="btn-outline" style="margin-top: 40px; border-color: #ccc; color: #666;" onclick="alternarModo('pesquisador')">🔒 Voltar (Pesquisador)</button>
+        <button class="btn-outline" style="margin-top: 40px; border-color: #ccc; color: #666;" onclick="voltarParaPesquisadorSeguro()">🔒 Voltar (Pesquisador)</button>
     </div>
 
-    <!-- TELA BANDEJA E TCLE -->
-    <div id="tela-tcle" class="content hidden">
+    <!-- TELA IDENTIFICAÇÃO JULGADOR -->
+    <div id="tela-identificacao" class="content hidden">
         <h2 style="color: var(--primaria);">Identificação</h2>
         
-        <div class="card" id="box-bandeja">
-            <label style="font-weight: bold; color: #d32f2f;">Informe o Número da sua Bandeja:</label>
-            <input type="number" id="julgador-bandeja" placeholder="Ex: 1, 2, 3..." style="font-size: 20px; font-weight: bold; text-align: center;">
+        <label style="font-weight: bold;">Nome Completo:</label>
+        <input type="text" id="julg-nome" placeholder="Digite seu nome">
+
+        <div id="box-julg-email" class="hidden">
+            <label style="font-weight: bold;">E-mail:</label>
+            <input type="email" id="julg-email" placeholder="seu@email.com">
         </div>
 
-        <label style="font-weight: bold;">Seu Nome Completo:</label>
-        <input type="text" id="julgador-nome" placeholder="Digite seu nome">
+        <div id="box-julg-telefone" class="hidden">
+            <label style="font-weight: bold;">Telefone:</label>
+            <input type="tel" id="julg-telefone" placeholder="(DD) 99999-9999">
+        </div>
 
-        <h3 style="color: var(--primaria); margin-top: 20px;">Termo de Consentimento</h3>
-        <p id="texto-tcle-renderizado" style="font-size: 14px; color: #444; text-align: justify; background: #f9f9f9; padding: 10px; border-radius: 5px;"></p>
-        
-        <label style="font-weight: bold;">Assinatura (Desenhe abaixo):</label>
-        <canvas id="assinatura-pad"></canvas>
-        <button onclick="limparAssinatura()" style="padding: 8px; font-size: 12px; margin-bottom: 15px; width: 100%; border: 1px solid #ccc; background: #fff;">Limpar Assinatura</button>
+        <div id="box-julg-tcle" class="hidden" style="margin-top: 20px;">
+            <h3 style="color: var(--primaria); margin-bottom: 5px;">Termo de Consentimento (TCLE)</h3>
+            <div id="texto-tcle-renderizado" style="font-size: 13px; color: #444; text-align: justify; background: #f9f9f9; padding: 10px; border-radius: 5px; max-height: 150px; overflow-y: auto;"></div>
+            
+            <label style="display: flex; align-items: center; margin-top: 10px; font-size: 14px; cursor: pointer;">
+                <input type="checkbox" id="julg-receber-tcle" style="width: auto; margin-right: 10px; transform: scale(1.2);"> Desejo receber uma cópia do TCLE por e-mail.
+            </label>
+
+            <div id="box-julg-assinatura" class="hidden" style="margin-top: 15px;">
+                <label style="font-weight: bold;">Assinatura (Desenhe abaixo):</label>
+                <canvas id="assinatura-pad"></canvas>
+                <button onclick="limparAssinatura()" style="padding: 8px; font-size: 12px; margin-bottom: 15px; width: 100%; border: 1px solid #ccc; background: #fff;">Limpar Assinatura</button>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px; border: 2px solid var(--primaria); background: var(--secundaria);">
+            <label style="font-weight: bold; color: var(--primaria); text-align: center; display: block; font-size: 18px;">Número da Bandeja:</label>
+            <input type="number" id="julg-bandeja" placeholder="Ex: 1, 2, 3..." style="font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 0;">
+        </div>
 
         <div class="flex-row">
             <button class="btn-outline" onclick="cancelarTesteJulgador()">Cancelar</button>
-            <button class="btn-acao" onclick="iniciarTesteJulgador()">Aceitar e Iniciar</button>
+            <button class="btn-acao" onclick="iniciarTesteJulgador()">Prosseguir >></button>
         </div>
     </div>
 
@@ -103,34 +138,37 @@
     <div id="tela-execucao-teste" class="content hidden">
         <h2 id="exec-titulo" style="color: var(--primaria); text-align: center;">Teste</h2>
         <div class="card">
-            <p id="exec-instrucao" style="font-size: 16px; font-weight: bold;"></p>
-            <div id="exec-opcoes" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            <p id="exec-instrucao" style="font-size: 16px; font-weight: bold; color: #333;"></p>
+            <div id="exec-opcoes" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;"></div>
         </div>
         <label style="font-weight: bold;">Comentários (Opcional):</label>
         <textarea id="exec-comentario" rows="3" placeholder="O que você percebeu?"></textarea>
-        <button class="btn-acao" onclick="enviarResposta()">Enviar Resposta</button>
+        <button class="btn-acao" onclick="enviarResposta()">Finalizar e Enviar</button>
     </div>
 </div>
 
 <!-- MODAL: CONFIGURAÇÕES -->
 <div class="modal-overlay" id="modalConfig">
     <div class="modal">
-        <div class="modal-title">⚙️ Configurações</div>
+        <div class="modal-title">⚙️ Configurações Gerais</div>
+        
         <label>Tema do App:</label>
         <select id="cfgTema" onchange="salvarConfigsGenericas()">
-            <option value="verde">🟢 Verde (Sensorial)</option>
-            <option value="azul">🔵 Azul (Institucional)</option>
+            <option value="verde">🟢 Verde (Padrão)</option>
+            <option value="azul">🔵 Azul</option>
             <option value="vermelho">🔴 Vermelho</option>
+            <option value="rosa">🌸 Rosa</option>
             <option value="escuro">⚫ Escuro</option>
+            <option value="transparente">🧊 Transparente</option>
         </select>
         
-        <label>TCLE Padrão (Será carregado em novos testes):</label>
-        <textarea id="cfgTcle" rows="4"></textarea>
+        <label>Senha do Pesquisador (Protege o acesso):</label>
+        <input type="password" id="cfgSenha" placeholder="Deixe em branco para não usar senha">
 
-        <button class="btn-outline" style="border-color: #d32f2f; color: #d32f2f;" onclick="abrirZonaRisco()">⚠️ Modo Avançado</button>
+        <button class="btn-outline" style="border-color: #d32f2f; color: #d32f2f; margin-top: 20px;" onclick="abrirZonaRisco()">⚠️ Modo Avançado</button>
         
         <div class="flex-row">
-            <button class="btn-acao" onclick="fecharModal('modalConfig'); salvarConfigsGenericas();">Fechar</button>
+            <button class="btn-acao" onclick="fecharModal('modalConfig'); salvarConfigsGenericas();">💾 Salvar e Fechar</button>
         </div>
     </div>
 </div>
@@ -152,48 +190,84 @@
         <input type="text" id="inputApagar" placeholder="Digite: quero excluir todo o histórico">
         <button class="btn-perigo" onclick="excluirHistoricoSeguro()">🗑️ Apagar Tudo</button>
         
-        <button class="btn-outline" style="border-color:#fbc02d; color:#fbc02d;" onclick="window.location.reload(true)">🔄 Forçar Atualização</button>
+        <button class="btn-outline" style="border-color:#fbc02d; color:#fbc02d;" onclick="window.location.reload(true)">🔄 Forçar Atualização do App</button>
         
         <button class="btn-outline" onclick="fecharModal('modalZonaRisco')">Voltar</button>
     </div>
 </div>
 
-<!-- MODAL: NOVO TESTE -->
-<div class="modal-overlay" id="modalNovoTeste">
-    <div class="modal">
-        <div class="modal-title">Configurar Teste</div>
-        
-        <label>Nome do Projeto/Produto:</label>
-        <input type="text" id="novo-teste-nome" placeholder="Ex: Cerveja IPA Lote A">
+<!-- MODAL: FORMULÁRIO DE TESTE (CRIAR/EDITAR) -->
+<div class="modal-overlay" id="modalFormTeste">
+    <div class="modal" style="max-width: 700px;">
+        <div class="modal-title" id="titulo-form-teste">Configurar Teste</div>
+        <input type="hidden" id="form-teste-id">
+
+        <div class="flex-row">
+            <div style="flex:2;">
+                <label>Nome do Projeto/Produto:</label>
+                <input type="text" id="form-teste-nome" placeholder="Ex: Avaliação Café Lote C">
+            </div>
+            <div style="flex:1;">
+                <label>Status:</label>
+                <select id="form-teste-status">
+                    <option value="elaboracao">Em Elaboração</option>
+                    <option value="ativo">Ativo</option>
+                    <option value="concluido">Concluído</option>
+                </select>
+            </div>
+        </div>
         
         <label>Tipo de Teste:</label>
-        <select id="novo-teste-tipo" onchange="atualizarUIFormTeste()">
+        <select id="form-teste-tipo">
             <option value="triangular">Teste Triangular</option>
-            <option value="adq" disabled>ADQ (Próxima Versão)</option>
-            <option value="hedonica" disabled>Escala Hedônica (Próxima Versão)</option>
+            <option value="duo-trio">Teste Duo-Trio</option>
+            <option value="pareada">Comparação Pareada</option>
+            <option value="multipla">Comparação Múltipla</option>
+            <option value="hedonica">Escala Hedônica (9 pontos)</option>
+            <option value="adq">ADQ (Just-About-Right 5 pontos)</option>
         </select>
 
         <div class="flex-row">
             <div style="flex:1">
                 <label>Amostra A (Nome Real):</label>
-                <input type="text" id="novo-teste-amostra-a" placeholder="Ex: Formulação Original">
+                <input type="text" id="form-teste-amostra-a" placeholder="Ex: Padrão">
             </div>
             <div style="flex:1">
                 <label>Amostra B (Nome Real):</label>
-                <input type="text" id="novo-teste-amostra-b" placeholder="Ex: Nova Formulação">
+                <input type="text" id="form-teste-amostra-b" placeholder="Ex: Modificada">
             </div>
         </div>
 
-        <label>Quantidade de Julgadores Esperada:</label>
-        <input type="number" id="novo-teste-qtd" value="30">
-        <p style="font-size: 11px; color: #666; margin-top: -10px;">O sistema criará blocos balanceados (múltiplos de 6) e definirá códigos únicos para cada bandeja.</p>
+        <label>Quantidade de Julgadores:</label>
+        <input type="number" id="form-teste-qtd" value="30">
 
-        <label>TCLE Específico deste Teste:</label>
-        <textarea id="novo-teste-tcle" rows="4"></textarea>
+        <h3 style="font-size: 16px; margin-top: 15px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Configurações do Julgador</h3>
+        
+        <div class="switch-container">
+            <span style="font-weight:bold; font-size:14px;">Solicitar E-mail</span>
+            <label class="switch"><input type="checkbox" id="form-req-email"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container">
+            <span style="font-weight:bold; font-size:14px;">Solicitar Telefone</span>
+            <label class="switch"><input type="checkbox" id="form-req-telefone"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container">
+            <span style="font-weight:bold; font-size:14px;">Exibir TCLE</span>
+            <label class="switch"><input type="checkbox" id="form-req-tcle" onchange="document.getElementById('box-editar-tcle').classList.toggle('hidden', !this.checked)"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container">
+            <span style="font-weight:bold; font-size:14px;">Exigir Assinatura na Tela</span>
+            <label class="switch"><input type="checkbox" id="form-req-assinatura"><span class="slider"></span></label>
+        </div>
+
+        <div id="box-editar-tcle" class="hidden" style="margin-bottom: 15px;">
+            <button class="btn-micro" onclick="document.getElementById('form-texto-tcle').classList.toggle('hidden')">✏️ Editar Texto do TCLE</button>
+            <textarea id="form-texto-tcle" class="hidden" rows="4" style="margin-top: 10px; font-size: 13px;"></textarea>
+        </div>
 
         <div class="flex-row" style="margin-top: 20px;">
-            <button class="btn-outline" onclick="fecharModal('modalNovoTeste')">Cancelar</button>
-            <button class="btn-acao" onclick="salvarNovoTeste()">Gerar Balanceamento e Salvar</button>
+            <button class="btn-outline" onclick="fecharModal('modalFormTeste')">Cancelar</button>
+            <button class="btn-acao" onclick="salvarTeste()">💾 Salvar Teste</button>
         </div>
     </div>
 </div>
@@ -202,69 +276,54 @@
 <div class="modal-overlay" id="modalPlanilha">
     <div class="modal">
         <div class="modal-title">Planilha de Balanceamento</div>
-        <p style="font-size: 13px; color: #666;">Prepare as bandejas com os códigos abaixo para cada julgador.</p>
-        <div id="planilha-container" style="max-height: 40vh; overflow-y: auto; margin-bottom: 15px;"></div>
-        <div class="flex-row">
-            <button class="btn-outline" onclick="fecharModal('modalPlanilha')">Fechar</button>
-            <button class="btn-acao" onclick="alert('Exportação de PDF em breve!')">🖨️ Exportar PDF</button>
-        </div>
+        <div id="planilha-container" style="max-height: 50vh; overflow-y: auto; margin-bottom: 15px;"></div>
+        <button class="btn-outline" onclick="fecharModal('modalPlanilha')">Fechar</button>
     </div>
 </div>
 
 <!-- MODAL: RESULTADOS -->
 <div class="modal-overlay" id="modalResultados">
     <div class="modal">
-        <div class="modal-title">Resultados Parciais</div>
+        <div class="modal-title">Resultados do Teste</div>
         <div id="resultados-container"></div>
         <button class="btn-acao" style="margin-top: 20px;" onclick="fecharModal('modalResultados')">Fechar</button>
     </div>
 </div>
 
 <script>
-    // --- PALETAS DE CORES (Herdado do Alô Etiqueta) ---
+    // --- PALETAS DE CORES ---
     const paletasDeCores = {
         verde: { primaria: '#2e7d32', secundaria: '#e8f5e9', fundo: '#f0f2f5', bgApp: '#ffffff' },
         azul: { primaria: '#1565C0', secundaria: '#E3F2FD', fundo: '#f0f2f5', bgApp: '#ffffff' },
         vermelho: { primaria: '#c62828', secundaria: '#ffebee', fundo: '#f0f2f5', bgApp: '#ffffff' },
-        escuro: { primaria: '#212121', secundaria: '#e0e0e0', fundo: '#424242', bgApp: '#f5f5f5' }
+        rosa: { primaria: '#d81b60', secundaria: '#fce4ec', fundo: '#fdf3f6', bgApp: '#ffffff' },
+        escuro: { primaria: '#212121', secundaria: '#e0e0e0', fundo: '#424242', bgApp: '#f5f5f5' },
+        transparente: { primaria: '#004d40', secundaria: '#b2dfdb', fundo: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', bgApp: 'rgba(255,255,255,0.7)' }
     };
 
-    // --- BANCO DE DADOS LOCAL ---
+    // --- DB V3 ---
     let db = {
-        configs: { 
-            modoAtual: 'pesquisador', 
-            urlAppScript: '', 
-            tema: 'verde',
-            tclePadrao: 'Declaro que fui informado(a) sobre os objetivos deste teste de análise sensorial e aceito participar voluntariamente. Fui informado de que os alimentos avaliados são seguros para consumo.'
-        },
+        configs: { modoAtual: 'pesquisador', urlAppScript: '', tema: 'verde', senhaPesquisador: '', tclePadrao: 'Declaro que fui informado(a) sobre os objetivos deste teste de análise sensorial e aceito participar voluntariamente. Fui informado de que os alimentos avaliados são seguros para consumo.' },
         testes: [], 
         respostas: [] 
     };
 
     let testeAtivoJulgador = null;
     let bandejaAtiva = null;
+    let filtroAtual = 'todos';
     let toastTimeout;
 
     function carregarBanco() {
-        let salvo = localStorage.getItem('sensory_db_v2');
-        if(salvo) {
-            db = JSON.parse(salvo);
-            if(!db.configs.tema) db.configs.tema = 'verde';
-        }
+        let salvo = localStorage.getItem('sensory_db_v3');
+        if(salvo) db = JSON.parse(salvo);
         aplicarTemaCores();
     }
-
-    function salvarBanco() {
-        localStorage.setItem('sensory_db_v2', JSON.stringify(db));
-    }
-
+    function salvarBanco() { localStorage.setItem('sensory_db_v3', JSON.stringify(db)); }
     function mostrarToast(msg) {
         const t = document.getElementById('toast');
         t.innerText = msg; t.style.bottom = '20px';
-        clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => { t.style.bottom = '-60px' }, 3000);
+        clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { t.style.bottom = '-60px' }, 3000);
     }
-
     function aplicarTemaCores() {
         let c = paletasDeCores[db.configs.tema] || paletasDeCores.verde;
         document.documentElement.style.setProperty('--primaria', c.primaria);
@@ -273,160 +332,191 @@
         document.documentElement.style.setProperty('--bg-app', c.bgApp);
     }
 
-    // --- CONFIGS E ZONA DE RISCO ---
+    // --- CONFIGS ---
     function abrirConfiguracoes() {
         document.getElementById('cfgTema').value = db.configs.tema;
-        document.getElementById('cfgTcle').value = db.configs.tclePadrao;
+        document.getElementById('cfgSenha').value = db.configs.senhaPesquisador || '';
         abrirModal('modalConfig');
     }
-
     function salvarConfigsGenericas() {
         db.configs.tema = document.getElementById('cfgTema').value;
-        db.configs.tclePadrao = document.getElementById('cfgTcle').value;
+        db.configs.senhaPesquisador = document.getElementById('cfgSenha').value;
         salvarBanco(); aplicarTemaCores();
     }
-
-    function abrirZonaRisco() {
-        fecharModal('modalConfig');
-        document.getElementById('cfgUrl').value = db.configs.urlAppScript;
-        document.getElementById('inputApagar').value = '';
-        abrirModal('modalZonaRisco');
-    }
-
+    function abrirZonaRisco() { fecharModal('modalConfig'); document.getElementById('cfgUrl').value = db.configs.urlAppScript; abrirModal('modalZonaRisco'); }
     function excluirHistoricoSeguro() {
         if(document.getElementById('inputApagar').value === "quero excluir todo o histórico") {
-            db.testes = []; db.respostas = [];
-            salvarBanco(); mostrarToast("Banco Limpo!"); renderizarTelas(); fecharModal('modalZonaRisco');
-        } else {
-            alert("Frase incorreta.");
-        }
+            db.testes = []; db.respostas = []; salvarBanco(); mostrarToast("Banco Limpo!"); window.location.reload();
+        } else alert("Frase incorreta.");
     }
-
     function exportarBancoTXT() {
-        const txt = JSON.stringify(db);
-        const blob = new Blob([txt], {type: "text/plain"});
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `Backup_LAS_${Date.now()}.txt`;
-        a.click();
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(db)], {type: "text/plain"}));
+        a.download = `Backup_LAS_${Date.now()}.txt`; a.click();
     }
-
     function importarBancoTXT(e) {
-        const f = e.target.files[0];
-        if(!f) return;
         const reader = new FileReader();
-        reader.onload = function(ev) {
-            try { db = JSON.parse(ev.target.result); salvarBanco(); mostrarToast("Restaurado!"); location.reload(); }
-            catch(er) { alert("Arquivo inválido."); }
-        };
-        reader.readAsText(f);
+        reader.onload = function(ev) { try { db = JSON.parse(ev.target.result); salvarBanco(); location.reload(); } catch(er) { alert("Inválido."); } };
+        reader.readAsText(e.target.files[0]);
     }
 
     // --- ROTEAMENTO ---
-    function alternarModo(modo) {
-        db.configs.modoAtual = modo;
-        salvarBanco(); renderizarTelas();
+    function voltarParaPesquisadorSeguro() {
+        if(db.configs.senhaPesquisador) {
+            let pwd = prompt("Digite a senha do pesquisador:");
+            if(pwd !== db.configs.senhaPesquisador) { alert("Senha incorreta!"); return; }
+        }
+        alternarModo('pesquisador');
     }
+
+    function alternarModo(modo) { db.configs.modoAtual = modo; salvarBanco(); renderizarTelas(); }
 
     function renderizarTelas() {
         document.getElementById('tela-pesquisador').classList.add('hidden');
         document.getElementById('tela-julgador').classList.add('hidden');
-        document.getElementById('tela-tcle').classList.add('hidden');
+        document.getElementById('tela-identificacao').classList.add('hidden');
         document.getElementById('tela-execucao-teste').classList.add('hidden');
 
-        if(db.configs.modoAtual === 'pesquisador') {
-            document.getElementById('tela-pesquisador').classList.remove('hidden');
-            renderizarListaPesquisador();
-        } else {
-            document.getElementById('tela-julgador').classList.remove('hidden');
-            renderizarListaJulgador();
-        }
+        if(db.configs.modoAtual === 'pesquisador') { document.getElementById('tela-pesquisador').classList.remove('hidden'); renderizarListaPesquisador(); } 
+        else { document.getElementById('tela-julgador').classList.remove('hidden'); renderizarListaJulgador(); }
     }
 
     // --- MODO PESQUISADOR ---
-    function atualizarUIFormTeste() {
-        // Preparando para testes futuros
+    function abrirModalFormTeste(id = null) {
+        let t = id ? db.testes.find(x => x.id === id) : null;
+        document.getElementById('titulo-form-teste').innerText = t ? "Editar Teste" : "Criar Novo Teste";
+        document.getElementById('form-teste-id').value = t ? t.id : '';
+        document.getElementById('form-teste-nome').value = t ? t.nome : '';
+        document.getElementById('form-teste-status').value = t ? t.status : 'elaboracao';
+        document.getElementById('form-teste-tipo').value = t ? t.tipo : 'triangular';
+        document.getElementById('form-teste-amostra-a').value = t ? t.amostras.A : '';
+        document.getElementById('form-teste-amostra-b').value = t ? t.amostras.A : '';
+        document.getElementById('form-teste-qtd').value = t ? t.qtdJulgadores : 30;
+        
+        let conf = t ? t.configs : { reqEmail: false, reqTelefone: false, reqTcle: true, reqAssinatura: true, tcleTexto: db.configs.tclePadrao };
+        document.getElementById('form-req-email').checked = conf.reqEmail;
+        document.getElementById('form-req-telefone').checked = conf.reqTelefone;
+        document.getElementById('form-req-tcle').checked = conf.reqTcle;
+        document.getElementById('form-req-assinatura').checked = conf.reqAssinatura;
+        document.getElementById('form-texto-tcle').value = conf.tcleTexto || db.configs.tclePadrao;
+        
+        document.getElementById('box-editar-tcle').classList.toggle('hidden', !conf.reqTcle);
+        document.getElementById('form-texto-tcle').classList.add('hidden');
+        
+        abrirModal('modalFormTeste');
     }
 
-    function abrirModalNovoTeste() {
-        document.getElementById('novo-teste-nome').value = '';
-        document.getElementById('novo-teste-amostra-a').value = '';
-        document.getElementById('novo-teste-amostra-b').value = '';
-        document.getElementById('novo-teste-qtd').value = '30';
-        document.getElementById('novo-teste-tcle').value = db.configs.tclePadrao;
-        abrirModal('modalNovoTeste');
+    function gerarCodigosUnicos(qtd, excluidos) {
+        let cods = [];
+        for(let i=0; i<qtd; i++){
+            let c;
+            do { c = Math.floor(100 + Math.random() * 900).toString(); } 
+            while(excluidos.includes(c) || cods.includes(c) || c.charAt(0) === '0');
+            cods.push(c); excluidos.push(c);
+        }
+        return cods;
     }
 
-    function gerarCodigo3DigitosUnico(usados) {
-        let cod;
-        do { cod = Math.floor(100 + Math.random() * 900).toString(); } 
-        while (usados.includes(cod) || cod.charAt(0) === '0'); // Evita repetição na mesma bandeja
-        usados.push(cod);
-        return cod;
-    }
+    function gerarBalanceamento(tipo, qtdDesejada, amA, amB, planAtual = []) {
+        let excluidos = [];
+        planAtual.forEach(b => b.amostras.forEach(a => excluidos.push(a.codigo)));
+        let plan = [...planAtual];
+        let inicio = plan.length;
 
-    function gerarBalanceamentoTriangular(qtd, amA, amB) {
-        const blocos = ['ABB', 'BAA', 'AAB', 'BBA', 'ABA', 'BAB'];
-        let plan = [];
-        for(let i = 0; i < qtd; i++) {
-            let padrao = blocos[i % 6];
-            let usados = [];
-            let layout = padrao.split('').map(letra => ({
-                tipo: letra,
-                nomeReal: letra === 'A' ? amA : amB,
-                codigo: gerarCodigo3DigitosUnico(usados)
-            }));
-            
-            let countA = padrao.split('A').length - 1;
-            let impar = countA === 1 ? 'A' : 'B';
-            let gabarito = layout.find(l => l.tipo === impar).codigo;
+        if(inicio >= qtdDesejada) return plan; // Não reduziu
+        let paraGerar = qtdDesejada - inicio;
 
-            plan.push({ bandeja: i + 1, padrao: padrao, amostras: layout, gabarito: gabarito });
+        for(let i = inicio; i < qtdDesejada; i++) {
+            let bandeja = i + 1;
+            let layout = [], gabarito = null, padrao = '';
+
+            if(tipo === 'triangular') {
+                const blocos = ['ABB', 'BAA', 'AAB', 'BBA', 'ABA', 'BAB'];
+                padrao = blocos[i % 6];
+                let cods = gerarCodigosUnicos(3, excluidos);
+                layout = padrao.split('').map((l, idx) => ({ tipo: l, nomeReal: l === 'A' ? amA : amB, codigo: cods[idx] }));
+                let countA = padrao.split('A').length - 1;
+                gabarito = layout.find(l => l.tipo === (countA === 1 ? 'A' : 'B')).codigo;
+            } 
+            else if(tipo === 'duo-trio') {
+                const blocos = ['AAB', 'ABA', 'BBA', 'BAB']; // 1a letra é REF
+                padrao = blocos[i % 4];
+                let cods = gerarCodigosUnicos(3, excluidos);
+                layout = padrao.split('').map((l, idx) => ({ tipo: l, nomeReal: l === 'A' ? amA : amB, codigo: idx === 0 ? "REF" : cods[idx], isRef: idx===0 }));
+                gabarito = layout.find((l, idx) => idx > 0 && l.tipo === layout[0].tipo).codigo;
+            }
+            else if(tipo === 'pareada' || tipo === 'hedonica' || tipo === 'adq' || tipo === 'multipla') {
+                padrao = i % 2 === 0 ? 'AB' : 'BA';
+                let cods = gerarCodigosUnicos(2, excluidos);
+                layout = padrao.split('').map((l, idx) => ({ tipo: l, nomeReal: l === 'A' ? amA : amB, codigo: cods[idx] }));
+                gabarito = "N/A";
+            }
+            plan.push({ bandeja, padrao, amostras: layout, gabarito });
         }
         return plan;
     }
 
-    function salvarNovoTeste() {
-        let nome = document.getElementById('novo-teste-nome').value.trim();
-        let tipo = document.getElementById('novo-teste-tipo').value;
-        let amA = document.getElementById('novo-teste-amostra-a').value.trim();
-        let amB = document.getElementById('novo-teste-amostra-b').value.trim();
-        let qtd = parseInt(document.getElementById('novo-teste-qtd').value);
-        let tcle = document.getElementById('novo-teste-tcle').value;
-
-        if(!nome || !amA || !amB || isNaN(qtd) || qtd <= 0) return alert("Preencha todos os campos corretamente!");
-
-        let plan = gerarBalanceamentoTriangular(qtd, amA, amB);
-
-        let novoTeste = {
-            id: 'T_' + Date.now(),
-            nome: nome, tipo: tipo, tcle: tcle,
-            amostras: { A: amA, B: amB },
-            qtdJulgadores: qtd,
-            balanceamento: plan,
-            status: 'ativo', dataCriacao: new Date().toLocaleString('pt-BR')
+    function salvarTeste() {
+        let id = document.getElementById('form-teste-id').value;
+        let nome = document.getElementById('form-teste-nome').value.trim();
+        let status = document.getElementById('form-teste-status').value;
+        let tipo = document.getElementById('form-teste-tipo').value;
+        let amA = document.getElementById('form-teste-amostra-a').value.trim();
+        let amB = document.getElementById('form-teste-amostra-b').value.trim();
+        let qtd = parseInt(document.getElementById('form-teste-qtd').value);
+        
+        let configs = {
+            reqEmail: document.getElementById('form-req-email').checked,
+            reqTelefone: document.getElementById('form-req-telefone').checked,
+            reqTcle: document.getElementById('form-req-tcle').checked,
+            reqAssinatura: document.getElementById('form-req-assinatura').checked,
+            tcleTexto: document.getElementById('form-texto-tcle').value
         };
 
-        db.testes.push(novoTeste); salvarBanco(); fecharModal('modalNovoTeste'); renderizarListaPesquisador();
-        mostrarToast("Teste Criado!");
+        if(!nome || !amA || !amB || isNaN(qtd)) return alert("Preencha os campos essenciais.");
+
+        let testeObj;
+        if(id) {
+            testeObj = db.testes.find(t => t.id === id);
+            testeObj.nome = nome; testeObj.status = status; testeObj.tipo = tipo; 
+            testeObj.amostras = {A: amA, B: amB}; testeObj.configs = configs;
+            if(qtd > testeObj.qtdJulgadores) testeObj.balanceamento = gerarBalanceamento(tipo, qtd, amA, amB, testeObj.balanceamento);
+            testeObj.qtdJulgadores = qtd;
+        } else {
+            testeObj = {
+                id: 'T_' + Date.now(), nome, status, tipo, amostras: {A: amA, B: amB},
+                qtdJulgadores: qtd, configs, balanceamento: gerarBalanceamento(tipo, qtd, amA, amB, []),
+                dataCriacao: new Date().toLocaleString('pt-BR')
+            };
+            db.testes.push(testeObj);
+        }
+
+        salvarBanco(); fecharModal('modalFormTeste'); renderizarListaPesquisador(); mostrarToast("Salvo!");
     }
 
+    function filtrarTestes(f) { filtroAtual = f; renderizarListaPesquisador(); }
+
     function renderizarListaPesquisador() {
-        let div = document.getElementById('lista-testes-ativos');
-        div.innerHTML = '';
-        if(db.testes.length === 0) { div.innerHTML = '<p style="color:#666;">Nenhum teste ativo.</p>'; return; }
+        let div = document.getElementById('lista-testes-pesquisador'); div.innerHTML = '';
+        let filtrados = db.testes;
+        if(filtroAtual !== 'todos') filtrados = filtrados.filter(t => t.status === filtroAtual);
         
-        db.testes.forEach(t => {
+        if(filtrados.length === 0) { div.innerHTML = '<p style="color:#666;">Nenhum teste encontrado.</p>'; return; }
+        
+        filtrados.forEach(t => {
             let resps = db.respostas.filter(r => r.idTeste === t.id).length;
+            let corStatus = t.status === 'ativo' ? '#2e7d32' : t.status === 'elaboracao' ? '#e65100' : '#1565c0';
             div.innerHTML += `
-                <div class="card">
-                    <div class="card-title"><span>${t.nome}</span> <span class="badge">${t.tipo.toUpperCase()}</span></div>
-                    <p style="margin: 5px 0; font-size: 14px;">Amostras: <b>A:</b> ${t.amostras.A} | <b>B:</b> ${t.amostras.B}</p>
-                    <p style="margin: 5px 0; font-size: 14px; color: var(--primaria); font-weight: bold;">Julgadores: ${resps} / ${t.qtdJulgadores}</p>
-                    <div class="flex-row" style="margin-top: 15px;">
+                <div class="card" style="border-left: 5px solid ${corStatus}">
+                    <div class="card-title"><span>${t.nome}</span> <span class="badge" style="background:${corStatus}; color:#fff;">${t.status}</span></div>
+                    <p style="margin: 5px 0; font-size: 14px;">Tipo: <b>${t.tipo.toUpperCase()}</b></p>
+                    <p style="margin: 5px 0; font-size: 14px;">Amostras: A(${t.amostras.A}) | B(${t.amostras.B})</p>
+                    <p style="margin: 5px 0; font-size: 14px; color: var(--primaria); font-weight: bold;">Respostas: ${resps} / ${t.qtdJulgadores}</p>
+                    <div class="flex-row" style="margin-top: 15px; flex-wrap: wrap;">
+                        <button class="btn-micro" onclick="abrirModalFormTeste('${t.id}')">✏️ Editar</button>
                         <button class="btn-micro" onclick="abrirPlanilha('${t.id}')">📋 Planilha</button>
                         <button class="btn-micro" onclick="verResultados('${t.id}')">📊 Resultados</button>
-                        <button class="btn-micro" style="color:red; border-color:red;" onclick="apagarTeste('${t.id}')">🗑️</button>
+                        <button class="btn-micro" style="color:red; border-color:red; margin-left:auto;" onclick="apagarTeste('${t.id}')">🗑️</button>
                     </div>
                 </div>
             `;
@@ -434,176 +524,200 @@
     }
 
     function apagarTeste(id) {
-        if(confirm("Apagar este teste e suas respostas?")) {
-            db.testes = db.testes.filter(t => t.id !== id);
-            db.respostas = db.respostas.filter(r => r.idTeste !== id);
+        if(confirm("Apagar teste e respostas permanentemente?")) {
+            db.testes = db.testes.filter(t => t.id !== id); db.respostas = db.respostas.filter(r => r.idTeste !== id);
             salvarBanco(); renderizarListaPesquisador();
         }
     }
 
     function abrirPlanilha(id) {
         let t = db.testes.find(x => x.id === id);
-        let html = `<table><tr><th>Bandeja</th><th>Padrão</th><th>Esq.</th><th>Meio</th><th>Dir.</th><th>Gabarito</th></tr>`;
+        let html = `<table><tr><th>Band.</th><th>Padrão</th><th>Amostras</th><th>Gabarito</th></tr>`;
         t.balanceamento.forEach(b => {
-            html += `<tr>
-                <td><b>${b.bandeja}</b></td><td>${b.padrao}</td>
-                <td>${b.amostras[0].codigo}</td><td>${b.amostras[1].codigo}</td><td>${b.amostras[2].codigo}</td>
-                <td style="color:var(--primaria); font-weight:bold;">${b.gabarito}</td>
-            </tr>`;
+            let ams = b.amostras.map(a => a.codigo).join(" - ");
+            html += `<tr><td><b>${b.bandeja}</b></td><td>${b.padrao}</td><td>${ams}</td><td style="color:var(--primaria); font-weight:bold;">${b.gabarito}</td></tr>`;
         });
         html += `</table>`;
-        document.getElementById('planilha-container').innerHTML = html;
-        abrirModal('modalPlanilha');
+        document.getElementById('planilha-container').innerHTML = html; abrirModal('modalPlanilha');
+    }
+
+    // --- ESTATÍSTICA INFERENCIAL ---
+    function isSignificantTriangular(n, acertos) {
+        if(n < 5) return false;
+        let limit = Math.ceil((n / 3) + 1.645 * Math.sqrt((2 * n) / 9));
+        return { sig: acertos >= limit, limit };
     }
 
     function verResultados(id) {
         let t = db.testes.find(x => x.id === id);
         let resps = db.respostas.filter(r => r.idTeste === id);
-        let acertos = 0;
+        let html = `<div style="text-align:center; padding: 20px; background: var(--secundaria); border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="margin:0; color: var(--primaria);">${t.nome}</h3>
+            <p>Total de Respostas: <b>${resps.length}</b></p></div>`;
 
-        resps.forEach(r => { if(r.acertou) acertos++; });
-        let erros = resps.length - acertos;
-        let pAcerto = resps.length > 0 ? ((acertos / resps.length) * 100).toFixed(1) : 0;
-
-        let html = `
-            <div style="text-align:center; padding: 20px; background: var(--secundaria); border-radius: 8px;">
-                <h3 style="margin:0; color: var(--primaria);">${t.nome}</h3>
-                <p>Total de Respostas: <b>${resps.length}</b></p>
-                <div style="display:flex; justify-content: space-around; margin-top: 15px;">
-                    <div><span style="font-size: 24px; color: green; font-weight: bold;">${acertos}</span><br>Acertos (${pAcerto}%)</div>
-                    <div><span style="font-size: 24px; color: red; font-weight: bold;">${erros}</span><br>Erros</div>
-                </div>
-            </div>
-        `;
-        document.getElementById('resultados-container').innerHTML = html;
-        abrirModal('modalResultados');
+        if(t.tipo === 'triangular' || t.tipo === 'duo-trio') {
+            let acertos = resps.filter(r => r.acertou).length;
+            let pAcerto = resps.length > 0 ? ((acertos / resps.length) * 100).toFixed(1) : 0;
+            let sigInfo = "";
+            if(t.tipo === 'triangular' && resps.length >= 5) {
+                let stat = isSignificantTriangular(resps.length, acertos);
+                sigInfo = stat.sig ? `<p style="color:red; font-weight:bold;">Houve diferença significativa a 5% (Mínimo p/ significância: ${stat.limit})</p>` : `<p style="color:green; font-weight:bold;">Não houve diferença significativa a 5% (Mínimo: ${stat.limit})</p>`;
+            }
+            html += `<div style="display:flex; justify-content: space-around; font-size: 20px;">
+                <div><span style="color: green; font-weight: bold;">${acertos}</span><br><span style="font-size:14px;">Acertos (${pAcerto}%)</span></div>
+                <div><span style="color: red; font-weight: bold;">${resps.length - acertos}</span><br><span style="font-size:14px;">Erros</span></div>
+            </div> <div style="text-align:center; margin-top:15px;">${sigInfo}</div>`;
+        } else {
+            html += `<p style="text-align:center;"><i>Cálculo de médias em desenvolvimento para testes afetivos. Exporte o banco para ver as respostas brutas.</i></p>`;
+        }
+        
+        document.getElementById('resultados-container').innerHTML = html; abrirModal('modalResultados');
     }
 
     // --- MODO JULGADOR ---
     function renderizarListaJulgador() {
-        let div = document.getElementById('lista-testes-disponiveis');
-        div.innerHTML = '';
-        if(db.testes.length === 0) div.innerHTML = '<p class="text-center" style="color:#666;">Nenhum teste disponível.</p>';
-        
-        db.testes.forEach(t => {
-            div.innerHTML += `
-                <div class="card" style="cursor: pointer; border-left: 5px solid var(--primaria);" onclick="prepararTeste('${t.id}')">
-                    <div class="card-title" style="margin-bottom:0;">${t.nome}</div>
-                    <p style="font-size: 13px; color: #666; margin-top: 5px;">Toque para participar</p>
-                </div>
-            `;
+        let div = document.getElementById('lista-testes-disponiveis'); div.innerHTML = '';
+        let ativos = db.testes.filter(t => t.status === 'ativo');
+        if(ativos.length === 0) { div.innerHTML = '<p class="text-center" style="color:#666;">Nenhum teste ativo no momento.</p>'; return; }
+        ativos.forEach(t => {
+            div.innerHTML += `<div class="card" style="cursor: pointer; border-left: 5px solid var(--primaria);" onclick="prepararTeste('${t.id}')">
+                <div class="card-title" style="margin-bottom:0;">${t.nome}</div><p style="font-size: 13px; color: #666; margin-top: 5px;">Toque para iniciar</p></div>`;
         });
     }
 
     function prepararTeste(id) {
         testeAtivoJulgador = db.testes.find(t => t.id === id);
-        document.getElementById('julgador-nome').value = '';
-        document.getElementById('julgador-bandeja').value = '';
-        document.getElementById('texto-tcle-renderizado').innerText = testeAtivoJulgador.tcle;
-        limparAssinatura();
+        let c = testeAtivoJulgador.configs;
         
+        document.getElementById('julg-nome').value = ''; document.getElementById('julg-bandeja').value = '';
+        document.getElementById('julg-email').value = ''; document.getElementById('julg-telefone').value = '';
+        document.getElementById('julg-receber-tcle').checked = false;
+        
+        document.getElementById('box-julg-email').classList.toggle('hidden', !c.reqEmail);
+        document.getElementById('box-julg-telefone').classList.toggle('hidden', !c.reqTelefone);
+        document.getElementById('box-julg-tcle').classList.toggle('hidden', !c.reqTcle);
+        document.getElementById('box-julg-assinatura').classList.toggle('hidden', !c.reqAssinatura);
+        document.getElementById('texto-tcle-renderizado').innerText = c.tcleTexto;
+        
+        limparAssinatura();
         document.getElementById('tela-julgador').classList.add('hidden');
-        document.getElementById('tela-tcle').classList.remove('hidden');
-        redimensionarCanvas();
+        document.getElementById('tela-identificacao').classList.remove('hidden');
+        if(c.reqAssinatura) setTimeout(redimensionarCanvas, 200);
     }
 
-    function cancelarTesteJulgador() {
-        testeAtivoJulgador = null; bandejaAtiva = null;
-        document.getElementById('tela-tcle').classList.add('hidden');
-        document.getElementById('tela-julgador').classList.remove('hidden');
-    }
+    function cancelarTesteJulgador() { testeAtivoJulgador = null; bandejaAtiva = null; document.getElementById('tela-identificacao').classList.add('hidden'); document.getElementById('tela-execucao-teste').classList.add('hidden'); document.getElementById('tela-julgador').classList.remove('hidden'); }
 
     function iniciarTesteJulgador() {
-        let nome = document.getElementById('julgador-nome').value.trim();
-        let numBandeja = parseInt(document.getElementById('julgador-bandeja').value);
+        let c = testeAtivoJulgador.configs;
+        let nome = document.getElementById('julg-nome').value.trim();
+        let numBandeja = parseInt(document.getElementById('julg-bandeja').value);
 
-        if(isNaN(numBandeja) || numBandeja <= 0) return alert("Por favor, informe o número da sua bandeja.");
-        
-        bandejaAtiva = testeAtivoJulgador.balanceamento.find(b => b.bandeja === numBandeja);
-        if(!bandejaAtiva) return alert("Número de bandeja não encontrado para este teste.");
+        if(!nome) return alert("Por favor, informe seu nome.");
+        if(c.reqEmail && !document.getElementById('julg-email').value) return alert("E-mail é obrigatório.");
+        if(c.reqAssinatura && canvasVazio()) return alert("Por favor, assine o termo.");
+        if(isNaN(numBandeja) || numBandeja <= 0) return alert("Informe o número da bandeja.");
 
-        // Verifica se bandeja já foi respondida (opcional, por enquanto vamos apenas avisar)
-        let jaRespondida = db.respostas.find(r => r.idTeste === testeAtivoJulgador.id && r.bandeja === numBandeja);
-        if(jaRespondida) {
-            if(!confirm("Atenção: A bandeja " + numBandeja + " já possui uma resposta registrada. Deseja sobrescrever/continuar?")) return;
+        if(db.respostas.find(r => r.idTeste === testeAtivoJulgador.id && r.bandeja === numBandeja)) {
+            return alert("ERRO: Esta bandeja já foi respondida! Por favor, verifique o número.");
         }
 
-        if(!nome) return alert("Por favor, digite seu nome.");
-        if(canvasVazio()) return alert("Por favor, assine o termo de consentimento.");
+        bandejaAtiva = testeAtivoJulgador.balanceamento.find(b => b.bandeja === numBandeja);
+        if(!bandejaAtiva) return alert("Bandeja " + numBandeja + " não configurada para este teste.");
 
-        document.getElementById('tela-tcle').classList.add('hidden');
+        document.getElementById('tela-identificacao').classList.add('hidden');
         document.getElementById('tela-execucao-teste').classList.remove('hidden');
 
-        document.getElementById('exec-titulo').innerText = testeAtivoJulgador.nome + " (Bandeja " + numBandeja + ")";
-        document.getElementById('exec-instrucao').innerText = "Prove as amostras da esquerda para a direita. Duas são iguais e uma é diferente. Selecione a amostra DIFERENTE:";
+        document.getElementById('exec-titulo').innerText = testeAtivoJulgador.nome + " (Band. " + numBandeja + ")";
+        let inst = "", htmlOpts = "";
+        let ams = bandejaAtiva.amostras;
+
+        if(testeAtivoJulgador.tipo === 'triangular') {
+            inst = "Prove as amostras da esquerda para a direita. Duas são iguais e uma é diferente. Selecione a DIFERENTE:";
+            ams.forEach(a => { htmlOpts += `<label style="background:var(--secundaria); padding:15px; border-radius:8px; display:flex; align-items:center; cursor:pointer;"><input type="radio" name="resp" value="${a.codigo}" style="width:auto; margin-right:15px; transform:scale(1.5);"> <span style="font-size:20px; font-weight:bold;">${a.codigo}</span></label>`; });
+        } else if(testeAtivoJulgador.tipo === 'duo-trio') {
+            inst = `Prove a Referência (REF). Depois prove as outras amostras. Qual delas é IGUAL à referência?`;
+            htmlOpts += `<div style="text-align:center; padding:10px; background:#fff9c4; border-radius:8px; font-weight:bold; margin-bottom:10px;">Amostra de Referência: ${ams[0].codigo}</div>`;
+            for(let i=1; i<ams.length; i++) { htmlOpts += `<label style="background:var(--secundaria); padding:15px; border-radius:8px; display:flex; align-items:center; cursor:pointer;"><input type="radio" name="resp" value="${ams[i].codigo}" style="width:auto; margin-right:15px; transform:scale(1.5);"> <span style="font-size:20px; font-weight:bold;">${ams[i].codigo}</span></label>`; }
+        } else if(testeAtivoJulgador.tipo === 'pareada' || testeAtivoJulgador.tipo === 'multipla') {
+            inst = "Prove as amostras abaixo. Selecione aquela que você PREFERE (ou possui maior intensidade do atributo avaliado):";
+            ams.forEach(a => { htmlOpts += `<label style="background:var(--secundaria); padding:15px; border-radius:8px; display:flex; align-items:center; cursor:pointer;"><input type="radio" name="resp" value="${a.codigo}" style="width:auto; margin-right:15px; transform:scale(1.5);"> <span style="font-size:20px; font-weight:bold;">${a.codigo}</span></label>`; });
+        } else if(testeAtivoJulgador.tipo === 'hedonica') {
+            inst = "Como você avalia a aceitação de cada amostra?";
+            let escala = ["Desgostei muitíssimo", "Desgostei muito", "Desgostei moderadamente", "Desgostei ligeiramente", "Nem gostei, nem desgostei", "Gostei ligeiramente", "Gostei moderadamente", "Gostei muito", "Gostei muitíssimo"];
+            ams.forEach(a => {
+                htmlOpts += `<div style="background: white; border:1px solid #ddd; padding:10px; border-radius:8px;"><p style="text-align:center; font-weight:bold; font-size:18px; color:var(--primaria);">Amostra ${a.codigo}</p><div class="escala-container">`;
+                escala.forEach((esc, idx) => { htmlOpts += `<label class="hedonica-radio"><input type="radio" name="hed_${a.codigo}" value="${idx+1}"><span>${idx+1}</span></label>`; });
+                htmlOpts += `</div><p style="text-align:center; font-size:11px; color:#666;">(1 = Desgostei muitíssimo | 9 = Gostei muitíssimo)</p></div>`;
+            });
+        } else if(testeAtivoJulgador.tipo === 'adq') {
+            inst = "Sobre o atributo avaliado, como você considera cada amostra?";
+            let escala = ["Muito menos que o ideal", "Menos que o ideal", "IDEAL", "Mais que o ideal", "Muito mais que o ideal"];
+            ams.forEach(a => {
+                htmlOpts += `<div style="background: white; border:1px solid #ddd; padding:10px; border-radius:8px;"><p style="text-align:center; font-weight:bold; font-size:18px; color:var(--primaria);">Amostra ${a.codigo}</p><div class="escala-container">`;
+                escala.forEach((esc, idx) => { htmlOpts += `<label class="hedonica-radio" style="width:80px;"><input type="radio" name="adq_${a.codigo}" value="${idx+1}"><span style="margin-top:5px;">${esc}</span></label>`; });
+                htmlOpts += `</div></div>`;
+            });
+        }
+
+        document.getElementById('exec-instrucao').innerText = inst;
+        document.getElementById('exec-opcoes').innerHTML = htmlOpts;
         document.getElementById('exec-comentario').value = '';
-        
-        let divOpcoes = document.getElementById('exec-opcoes');
-        divOpcoes.innerHTML = '';
-        
-        bandejaAtiva.amostras.forEach(amostra => {
-            divOpcoes.innerHTML += `
-                <label style="display: flex; align-items: center; background: var(--secundaria); padding: 15px; border-radius: 8px; border: 1px solid #ccc; cursor: pointer;">
-                    <input type="radio" name="amostra-teste" value="${amostra.codigo}" style="width: auto; margin: 0 15px 0 0; transform: scale(1.5);">
-                    <span style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${amostra.codigo}</span>
-                </label>
-            `;
-        });
     }
 
     function enviarResposta() {
-        let selecionada = document.querySelector('input[name="amostra-teste"]:checked');
-        if(!selecionada) return alert("Por favor, selecione uma amostra.");
+        let res = {}, acertou = false, codMarcado = null;
+        let tp = testeAtivoJulgador.tipo;
 
-        let codMarcado = selecionada.value;
-        let acertou = codMarcado === bandejaAtiva.gabarito;
+        if(['triangular', 'duo-trio', 'pareada', 'multipla'].includes(tp)) {
+            let sel = document.querySelector('input[name="resp"]:checked');
+            if(!sel) return alert("Selecione uma amostra!");
+            codMarcado = sel.value;
+            acertou = codMarcado === bandejaAtiva.gabarito;
+            res.selecionado = codMarcado;
+        } else {
+            let incompleto = false;
+            bandejaAtiva.amostras.forEach(a => {
+                let sel = document.querySelector(`input[name="${tp === 'hedonica' ? 'hed_' : 'adq_'}${a.codigo}"]:checked`);
+                if(!sel) incompleto = true; else res[a.codigo] = parseInt(sel.value);
+            });
+            if(incompleto) return alert("Por favor, avalie todas as amostras.");
+        }
 
-        let resposta = {
+        let respostaObj = {
             idTeste: testeAtivoJulgador.id,
-            julgadorNome: document.getElementById('julgador-nome').value,
             bandeja: bandejaAtiva.bandeja,
-            assinaturaTCLE: canvas.toDataURL(),
-            padraoAplicado: bandejaAtiva.padrao,
-            gabarito: bandejaAtiva.gabarito,
-            respostaSelecionada: codMarcado,
-            acertou: acertou,
+            julgador: {
+                nome: document.getElementById('julg-nome').value,
+                email: document.getElementById('julg-email').value,
+                telefone: document.getElementById('julg-telefone').value,
+                receberTcle: document.getElementById('julg-receber-tcle').checked,
+                assinatura: testeAtivoJulgador.configs.reqAssinatura ? canvas.toDataURL() : null
+            },
+            padraoAplicado: bandejaAtiva.padrao, gabarito: bandejaAtiva.gabarito,
+            respostasAnalise: res, acertou: acertou,
             comentario: document.getElementById('exec-comentario').value,
             dataHora: new Date().toLocaleString('pt-BR')
         };
 
-        // Sobrescrever se já existir bandeja respondida, ou apenas adicionar
-        let idxExt = db.respostas.findIndex(r => r.idTeste === resposta.idTeste && r.bandeja === resposta.bandeja);
-        if(idxExt > -1) db.respostas[idxExt] = resposta;
-        else db.respostas.push(resposta);
-
-        salvarBanco();
-        mostrarToast("Resposta enviada com sucesso!");
-        alternarModo('julgador'); 
+        db.respostas.push(respostaObj); salvarBanco(); mostrarToast("Enviado com sucesso!"); alternarModo('julgador');
     }
 
     // --- CANVAS SCRIPT ---
-    let canvas = document.getElementById('assinatura-pad');
-    let ctx = canvas.getContext('2d');
-    let desenhando = false;
-
+    let canvas = document.getElementById('assinatura-pad'); let ctx = canvas.getContext('2d'); let desenhando = false;
     function redimensionarCanvas() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = '#000'; }
     function getPosicao(e) { let rect = canvas.getBoundingClientRect(); let x = e.touches ? e.touches[0].clientX : e.clientX; let y = e.touches ? e.touches[0].clientY : e.clientY; return { x: x - rect.left, y: y - rect.top }; }
-    
     canvas.addEventListener('mousedown', (e) => { desenhando = true; let pos = getPosicao(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
     canvas.addEventListener('mousemove', (e) => { if(desenhando) { let pos = getPosicao(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } });
     canvas.addEventListener('mouseup', () => desenhando = false);
     canvas.addEventListener('touchstart', (e) => { e.preventDefault(); desenhando = true; let pos = getPosicao(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); }, {passive: false});
     canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(desenhando) { let pos = getPosicao(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } }, {passive: false});
     canvas.addEventListener('touchend', () => desenhando = false);
-
     function limparAssinatura() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
     function canvasVazio() { let blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height; return canvas.toDataURL() === blank.toDataURL(); }
 
-    // --- MODAIS GERAIS ---
     function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
     function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    // INIT
     window.onload = () => { carregarBanco(); renderizarTelas(); };
 </script>
 </body>
