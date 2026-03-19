@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>SensoryApp - Análise Sensorial</title>
+    <style>
+        :root {
+            --primaria: #2e7d32; /* Verde padrão para alimentos */
+            --secundaria: #e8f5e9;
+            --fundo: #f0f2f5;
+            --bg-app: #ffffff;
+        }
+        body {
+            font-family: Arial, sans-serif; background: var(--fundo); margin: 0; padding: 0;
+            display: flex; justify-content: center;
+        }
+        .app-container {
+            width: 100%; max-width: 800px; background: var(--bg-app); min-height: 100vh;
+            display: flex; flex-direction: column; position: relative; box-shadow: 0 0 15px rgba(0,0,0,.1);
+        }
+        .header {
+            background: var(--primaria); color: #fff; padding: 15px; display: flex;
+            justify-content: space-between; align-items: center; font-weight: bold; position: sticky; top: 0; z-index: 10;
+        }
+        .content { padding: 20px; flex: 1; overflow-y: auto; }
+        
+        /* Botões e Inputs */
+        button { cursor: pointer; border: none; font-weight: bold; border-radius: 8px; transition: 0.2s; }
+        .btn-acao { background: var(--primaria); color: white; padding: 12px 20px; width: 100%; font-size: 16px; margin-bottom: 10px; }
+        .btn-acao:active { filter: brightness(0.8); }
+        .btn-outline { background: transparent; color: var(--primaria); border: 2px solid var(--primaria); padding: 12px 20px; width: 100%; font-size: 16px; margin-bottom: 10px; }
+        .btn-perigo { background: #d32f2f; color: white; padding: 10px; border-radius: 5px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        
+        /* Cards */
+        .card { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-title { font-size: 18px; font-weight: bold; color: var(--primaria); margin-bottom: 10px; }
+        
+        /* Canvas de Assinatura */
+        #assinatura-pad { border: 2px dashed #ccc; border-radius: 8px; background: #fafafa; cursor: crosshair; touch-action: none; width: 100%; height: 200px; margin-bottom: 10px; }
+        
+        /* Modais */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.6); align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background: #fff; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
+        .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: var(--primaria); border-bottom: 2px solid var(--primaria); padding-bottom: 5px; }
+        
+        /* Utilitários */
+        .hidden { display: none !important; }
+        .flex-row { display: flex; gap: 10px; }
+        .text-center { text-align: center; }
+        .badge { background: var(--secundaria); color: var(--primaria); padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <div id="header-title">🧪 SensoryApp</div>
+        <div>
+            <span id="indicador-sync" title="Sincronização">⚪</span>
+            <button onclick="abrirConfiguracoes()" style="background:none; font-size: 20px; color: white;">⚙️</button>
+        </div>
+    </div>
+
+    <!-- MODO PESQUISADOR -->
+    <div id="tela-pesquisador" class="content">
+        <h2>Painel do Pesquisador</h2>
+        <button class="btn-acao" onclick="abrirModalNovoTeste()">+ Criar Novo Teste</button>
+        <button class="btn-outline" onclick="alternarModo('julgador')">👁️ Mudar para Modo Julgador</button>
+        
+        <h3 style="margin-top: 20px;">Testes Ativos</h3>
+        <div id="lista-testes-ativos"></div>
+    </div>
+
+    <!-- MODO JULGADOR -->
+    <div id="tela-julgador" class="content hidden">
+        <h2 class="text-center">Bem-vindo(a)!</h2>
+        <p class="text-center" style="color: #666;">Selecione o teste que você foi convidado a participar:</p>
+        
+        <div id="lista-testes-disponiveis"></div>
+
+        <button class="btn-outline" style="margin-top: 40px; border-color: #ccc; color: #666;" onclick="alternarModo('pesquisador')">🔒 Voltar (Pesquisador)</button>
+    </div>
+
+    <!-- TELA DE TCLE E ASSINATURA -->
+    <div id="tela-tcle" class="content hidden">
+        <h2 style="color: var(--primaria);">Termo de Consentimento</h2>
+        <p style="font-size: 14px; color: #444; text-align: justify;">
+            Declaro que fui informado(a) sobre os objetivos deste teste de análise sensorial e aceito participar voluntariamente. Fui informado de que os alimentos avaliados são seguros para consumo.
+        </p>
+        
+        <label style="font-weight: bold;">Seu Nome Completo:</label>
+        <input type="text" id="julgador-nome" placeholder="Digite seu nome">
+
+        <label style="font-weight: bold;">Assinatura (Desenhe abaixo):</label>
+        <canvas id="assinatura-pad"></canvas>
+        <button onclick="limparAssinatura()" style="padding: 8px; font-size: 12px; margin-bottom: 15px; width: 100%;">Limpar Assinatura</button>
+
+        <div class="flex-row">
+            <button class="btn-outline" onclick="cancelarTesteJulgador()">Cancelar</button>
+            <button class="btn-acao" onclick="iniciarTesteJulgador()">Aceitar e Iniciar</button>
+        </div>
+    </div>
+
+    <!-- TELA EXECUÇÃO DO TESTE (Ex: Triangular) -->
+    <div id="tela-execucao-teste" class="content hidden">
+        <h2 id="exec-titulo" style="color: var(--primaria);">Teste</h2>
+        <p id="exec-instrucao" style="font-size: 16px; font-weight: bold;"></p>
+        
+        <div class="card">
+            <p>Prove as amostras da esquerda para a direita. Duas são iguais e uma é diferente. Selecione a amostra <b>DIFERENTE</b>:</p>
+            <div id="exec-opcoes" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Opções renderizadas via JS -->
+            </div>
+        </div>
+
+        <label style="font-weight: bold;">Comentários (Opcional):</label>
+        <textarea id="exec-comentario" rows="3" placeholder="O que você percebeu?"></textarea>
+
+        <button class="btn-acao" onclick="enviarResposta()">Enviar Resposta</button>
+    </div>
+
+</div>
+
+<!-- MODAL: NOVO TESTE -->
+<div class="modal-overlay" id="modalNovoTeste">
+    <div class="modal">
+        <div class="modal-title">Configurar Teste</div>
+        
+        <label>Nome do Projeto/Produto:</label>
+        <input type="text" id="novo-teste-nome" placeholder="Ex: Cerveja IPA Lote A">
+        
+        <label>Tipo de Teste:</label>
+        <select id="novo-teste-tipo" onchange="atualizarFormularioTeste()">
+            <option value="triangular">Teste Triangular</option>
+            <option value="duo-trio">Duo-Trio (Em breve)</option>
+            <option value="escala">Escala Hedônica (Em breve)</option>
+            <option value="adq">ADQ (Em breve)</option>
+        </select>
+
+        <div id="form-triangular">
+            <p style="font-size: 12px; color: #666;">O sistema irá gerar blocos balanceados com códigos de 3 dígitos automaticamente (ex: AAB, ABA, BAA, BBA, BAB, ABB).</p>
+            <label>Amostra A (Nome Real):</label>
+            <input type="text" id="novo-teste-amostra-a" placeholder="Ex: Formulação Original">
+            <label>Amostra B (Nome Real):</label>
+            <input type="text" id="novo-teste-amostra-b" placeholder="Ex: Nova Formulação">
+        </div>
+
+        <div class="flex-row" style="margin-top: 20px;">
+            <button class="btn-outline" onclick="fecharModal('modalNovoTeste')">Cancelar</button>
+            <button class="btn-acao" onclick="salvarNovoTeste()">Salvar e Ativar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- BANCO DE DADOS LOCAL ---
+    let db = {
+        configs: { modoAtual: 'pesquisador', urlAppScript: '' },
+        testes: [], // { id, nome, tipo, amostras: {a, b}, status, dataCriacao }
+        respostas: [] // { idTeste, julgadorNome, assinaturaDataUrl, amostrasAvaliadas, respostaSelecionada, comentario }
+    };
+
+    let testeAtivoJulgador = null; // Armazena qual teste o julgador está fazendo
+
+    function carregarBanco() {
+        let salvo = localStorage.getItem('sensory_db');
+        if(salvo) db = JSON.parse(salvo);
+    }
+
+    function salvarBanco() {
+        localStorage.setItem('sensory_db', JSON.stringify(db));
+    }
+
+    // --- ROTEAMENTO E INTERFACE ---
+    function alternarModo(modo) {
+        db.configs.modoAtual = modo;
+        salvarBanco();
+        renderizarTelas();
+    }
+
+    function renderizarTelas() {
+        document.getElementById('tela-pesquisador').classList.add('hidden');
+        document.getElementById('tela-julgador').classList.add('hidden');
+        document.getElementById('tela-tcle').classList.add('hidden');
+        document.getElementById('tela-execucao-teste').classList.add('hidden');
+
+        if(db.configs.modoAtual === 'pesquisador') {
+            document.getElementById('tela-pesquisador').classList.remove('hidden');
+            renderizarListaPesquisador();
+        } else {
+            document.getElementById('tela-julgador').classList.remove('hidden');
+            renderizarListaJulgador();
+        }
+    }
+
+    function gerarCodigo3Digitos() {
+        return Math.floor(100 + Math.random() * 900).toString();
+    }
+
+    // --- MODO PESQUISADOR ---
+    function abrirModalNovoTeste() {
+        document.getElementById('novo-teste-nome').value = '';
+        document.getElementById('novo-teste-amostra-a').value = '';
+        document.getElementById('novo-teste-amostra-b').value = '';
+        abrirModal('modalNovoTeste');
+    }
+
+    function salvarNovoTeste() {
+        let nome = document.getElementById('novo-teste-nome').value;
+        let tipo = document.getElementById('novo-teste-tipo').value;
+        let amostraA = document.getElementById('novo-teste-amostra-a').value;
+        let amostraB = document.getElementById('novo-teste-amostra-b').value;
+
+        if(!nome || !amostraA || !amostraB) return alert("Preencha todos os campos!");
+
+        let novoTeste = {
+            id: 'T_' + Date.now(),
+            nome: nome,
+            tipo: tipo,
+            amostras: { A: amostraA, B: amostraB },
+            status: 'ativo',
+            dataCriacao: new Date().toLocaleString('pt-BR')
+        };
+
+        db.testes.push(novoTeste);
+        salvarBanco();
+        fecharModal('modalNovoTeste');
+        renderizarListaPesquisador();
+    }
+
+    function renderizarListaPesquisador() {
+        let div = document.getElementById('lista-testes-ativos');
+        div.innerHTML = '';
+        if(db.testes.length === 0) div.innerHTML = '<p style="color:#666;">Nenhum teste ativo.</p>';
+        
+        db.testes.forEach(t => {
+            let numRespostas = db.respostas.filter(r => r.idTeste === t.id).length;
+            div.innerHTML += `
+                <div class="card">
+                    <div class="card-title">${t.nome} <span class="badge">${t.tipo.toUpperCase()}</span></div>
+                    <p style="margin: 5px 0; font-size: 14px;">Criado em: ${t.dataCriacao}</p>
+                    <p style="margin: 5px 0; font-size: 14px; color: var(--primaria); font-weight: bold;">Respostas coletadas: ${numRespostas}</p>
+                    <button class="btn-outline" style="padding: 8px; margin-top: 10px;" onclick="alert('Exportação será implementada na v2!')">📊 Ver Resultados</button>
+                </div>
+            `;
+        });
+    }
+
+    // --- MODO JULGADOR ---
+    function renderizarListaJulgador() {
+        let div = document.getElementById('lista-testes-disponiveis');
+        div.innerHTML = '';
+        let ativos = db.testes.filter(t => t.status === 'ativo');
+        
+        if(ativos.length === 0) div.innerHTML = '<p class="text-center" style="color:#666;">Nenhum teste disponível no momento.</p>';
+        
+        ativos.forEach(t => {
+            div.innerHTML += `
+                <div class="card" style="cursor: pointer; border-left: 5px solid var(--primaria);" onclick="prepararTeste('${t.id}')">
+                    <div class="card-title" style="margin-bottom:0;">${t.nome}</div>
+                    <p style="font-size: 13px; color: #666; margin-top: 5px;">Toque para participar</p>
+                </div>
+            `;
+        });
+    }
+
+    function prepararTeste(id) {
+        testeAtivoJulgador = db.testes.find(t => t.id === id);
+        document.getElementById('julgador-nome').value = '';
+        limparAssinatura();
+        
+        document.getElementById('tela-julgador').classList.add('hidden');
+        document.getElementById('tela-tcle').classList.remove('hidden');
+        redimensionarCanvas();
+    }
+
+    function cancelarTesteJulgador() {
+        testeAtivoJulgador = null;
+        document.getElementById('tela-tcle').classList.add('hidden');
+        document.getElementById('tela-julgador').classList.remove('hidden');
+    }
+
+    // --- CANVAS DE ASSINATURA ---
+    let canvas = document.getElementById('assinatura-pad');
+    let ctx = canvas.getContext('2d');
+    let desenhando = false;
+
+    function redimensionarCanvas() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#000';
+    }
+
+    function getPosicao(e) {
+        let rect = canvas.getBoundingClientRect();
+        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    canvas.addEventListener('mousedown', (e) => { desenhando = true; let pos = getPosicao(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
+    canvas.addEventListener('mousemove', (e) => { if(desenhando) { let pos = getPosicao(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } });
+    canvas.addEventListener('mouseup', () => desenhando = false);
+    
+    // Suporte a Touch (Celular)
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); desenhando = true; let pos = getPosicao(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(desenhando) { let pos = getPosicao(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } });
+    canvas.addEventListener('touchend', () => desenhando = false);
+
+    function limparAssinatura() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function canvasVazio() {
+        let blank = document.createElement('canvas');
+        blank.width = canvas.width; blank.height = canvas.height;
+        return canvas.toDataURL() === blank.toDataURL();
+    }
+
+    // --- EXECUÇÃO DO TESTE (Exemplo Triangular) ---
+    let amostrasApresentadas = []; // Guarda os códigos para salvar no banco
+
+    function iniciarTesteJulgador() {
+        let nome = document.getElementById('julgador-nome').value.trim();
+        if(!nome) return alert("Por favor, digite seu nome.");
+        if(canvasVazio()) return alert("Por favor, assine o termo de consentimento.");
+
+        document.getElementById('tela-tcle').classList.add('hidden');
+        document.getElementById('tela-execucao-teste').classList.remove('hidden');
+
+        document.getElementById('exec-titulo').innerText = testeAtivoJulgador.nome;
+        document.getElementById('exec-comentario').value = '';
+        
+        // Lógica simples de balanceamento Triangular (Para a V1, geramos AAB, ABA, etc. aleatório)
+        let padroes = [
+            [{t: 'A', id: gerarCodigo3Digitos()}, {t: 'A', id: gerarCodigo3Digitos()}, {t: 'B', id: gerarCodigo3Digitos()}],
+            [{t: 'A', id: gerarCodigo3Digitos()}, {t: 'B', id: gerarCodigo3Digitos()}, {t: 'A', id: gerarCodigo3Digitos()}],
+            [{t: 'B', id: gerarCodigo3Digitos()}, {t: 'A', id: gerarCodigo3Digitos()}, {t: 'A', id: gerarCodigo3Digitos()}]
+            // Para produção, colocaríamos BBB, BBA, BAB, etc. e faríamos a distribuição em blocos perfeitos.
+        ];
+        amostrasApresentadas = padroes[Math.floor(Math.random() * padroes.length)];
+
+        let divOpcoes = document.getElementById('exec-opcoes');
+        divOpcoes.innerHTML = '';
+        
+        amostrasApresentadas.forEach(amostra => {
+            divOpcoes.innerHTML += `
+                <label style="display: flex; align-items: center; background: var(--secundaria); padding: 15px; border-radius: 8px; border: 1px solid #ccc;">
+                    <input type="radio" name="amostra-triangular" value="${amostra.id}" style="width: auto; margin: 0 15px 0 0; transform: scale(1.5);">
+                    <span style="font-size: 20px; font-weight: bold; letter-spacing: 2px;">${amostra.id}</span>
+                </label>
+            `;
+        });
+    }
+
+    function enviarResposta() {
+        let selecionada = document.querySelector('input[name="amostra-triangular"]:checked');
+        if(!selecionada) return alert("Por favor, selecione qual amostra é diferente.");
+
+        let resposta = {
+            idTeste: testeAtivoJulgador.id,
+            julgadorNome: document.getElementById('julgador-nome').value,
+            assinaturaTCLE: canvas.toDataURL(),
+            amostrasApresentadas: amostrasApresentadas, // Salvamos exatamente o que ele viu e qual era A/B internamente
+            respostaSelecionada: selecionada.value,
+            comentario: document.getElementById('exec-comentario').value,
+            dataHora: new Date().toLocaleString('pt-BR')
+        };
+
+        db.respostas.push(resposta);
+        salvarBanco();
+
+        alert("Resposta enviada com sucesso! Muito obrigado pela participação.");
+        alternarModo('julgador'); // Volta para a tela inicial do julgador
+    }
+
+    // --- FUNÇÕES AUXILIARES MODAIS ---
+    function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    // Init
+    window.onload = () => {
+        carregarBanco();
+        renderizarTelas();
+    };
+</script>
+
+</body>
+</html>
